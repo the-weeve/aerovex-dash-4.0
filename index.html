@@ -2356,10 +2356,9 @@
         function createCampaignCharts() {
             if (!metaData || !googleData) return;
             
-            // Don't try to create charts if the canvas elements don't exist (tab not active)
-            if (!document.getElementById('campaignBubbleChart') || 
-                !document.getElementById('campaignProfitChart')) {
-                console.log('Campaign chart canvases not found, skipping chart creation');
+            // Check if bubble chart canvas exists
+            if (!document.getElementById('campaignBubbleChart')) {
+                console.log('Campaign bubble chart canvas not found');
                 return;
             }
             
@@ -2513,15 +2512,17 @@
                 }
             });
             
-            // Profit by Campaign Chart
-            const campaignsWithProfit = allCampaigns.map(c => ({
-                name: c.name,
-                platform: c.platform,
-                profit: (c.revenue * metrics.margin) - c.spend
-            })).sort((a, b) => b.profit - a.profit);
-            
-            if (campaignProfitChart) campaignProfitChart.destroy();
-            const profitCtx = document.getElementById('campaignProfitChart').getContext('2d');
+            // Profit by Campaign Chart (if canvas exists)
+            const profitCanvas = document.getElementById('campaignProfitChart');
+            if (profitCanvas) {
+                const campaignsWithProfit = allCampaigns.map(c => ({
+                    name: c.name,
+                    platform: c.platform,
+                    profit: (c.revenue * metrics.margin) - c.spend
+                })).sort((a, b) => b.profit - a.profit);
+                
+                if (campaignProfitChart) campaignProfitChart.destroy();
+                const profitCtx = profitCanvas.getContext('2d');
             campaignProfitChart = new Chart(profitCtx, {
                 type: 'bar',
                 data: {
@@ -2574,6 +2575,7 @@
                     }
                 }
             });
+            } // End profit chart conditional
         }
         
         function generateTopCampaignCards(campaigns, metrics) {
