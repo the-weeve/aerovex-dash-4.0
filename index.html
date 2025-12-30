@@ -1590,7 +1590,7 @@
     <div class="container">
         <!-- Campaign Performance Tab -->
         <div class="tab-content" id="campaignsTab">
-            <div class="upload-section" id="campaignUploadSection">
+            <div class="upload-section" id="campaignUploadSection" style="display: none;">
                 <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 12px;">Upload Campaign Data</h2>
                 <p style="color: #6b7280; margin-bottom: 24px;">Upload your combined Ad Campaign CSV (includes both Meta and Google data)</p>
                 
@@ -1688,7 +1688,7 @@
         
         <!-- Business Overview Tab -->
         <div class="tab-content active" id="businessTab">
-            <div class="upload-section" id="businessUploadSection">
+            <div class="upload-section" id="businessUploadSection" style="display: none;">
                 <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 12px;">Upload Business Data</h2>
                 <p style="color: #6b7280; margin-bottom: 24px;">Upload your monthly business metrics CSV</p>
                 
@@ -4146,7 +4146,6 @@
             updateCampaignDashboard();
             updateRevenueDashboard();
             updateTrendsDashboard();
-            updateExecutiveSummary();
             
             console.log('Dashboard initialization complete!');
         }
