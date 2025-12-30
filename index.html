@@ -3106,17 +3106,34 @@
         }
         
         function updateBusinessDashboard() {
-            if (!businessData || businessData.length === 0) return;
+            console.log('=== UPDATE BUSINESS DASHBOARD CALLED ===');
+            console.log('businessData:', businessData);
+            console.log('businessData length:', businessData ? businessData.length : 0);
+            
+            if (!businessData || businessData.length === 0) {
+                console.log('RETURNING: No business data');
+                return;
+            }
+            
+            console.log('Proceeding with dashboard update...');
             
             const margin = parseFloat(document.getElementById('businessMargin').value);
             const currentMonth = businessData[businessData.length - 1];
             
             console.log('Current month data:', currentMonth);
             console.log('Month string:', currentMonth.month);
+            console.log('Setting businessPageSubtitle...');
+            
+            // SIMPLE TEST - if this doesn't show up, something is very wrong
+            document.getElementById('businessPageSubtitle').textContent = "TEST - IF YOU SEE THIS, JAVASCRIPT IS WORKING!";
+            document.getElementById('businessPageSubtitle').style.color = "red";
+            document.getElementById('businessPageSubtitle').style.fontSize = "24px";
             
             document.getElementById('businessDashboardContent').classList.add('active');
             document.getElementById('businessPageSubtitle').textContent = `Latest: ${currentMonth.month} • ${(margin * 100)}% profit margin`;
             document.getElementById('currentMonthTitle').textContent = `Current Month Performance (${currentMonth.month})`;
+            
+            console.log('Calculating metrics...');
             
             const totalAdSpend = currentMonth.googleSpend + currentMonth.metaSpend;
             const totalAdRevenue = currentMonth.googleRevenue + currentMonth.metaRevenue;
@@ -4161,7 +4178,10 @@
         
         // Run initialization when page loads
         window.addEventListener('DOMContentLoaded', function() {
-            initializeDashboard();
+            console.log('DOM fully loaded, initializing dashboard in 100ms...');
+            setTimeout(() => {
+                initializeDashboard();
+            }, 100);
         });
         
         // ==========================================
