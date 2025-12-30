@@ -1954,6 +1954,10 @@
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             if (tabName === 'campaigns') {
                 document.getElementById('campaignsTab').classList.add('active');
+                // Create charts when tab becomes visible
+                if (metaData && googleData) {
+                    createCampaignCharts();
+                }
             } else if (tabName === 'business') {
                 document.getElementById('businessTab').classList.add('active');
             } else if (tabName === 'revenue') {
@@ -3106,34 +3110,14 @@
         }
         
         function updateBusinessDashboard() {
-            console.log('=== UPDATE BUSINESS DASHBOARD CALLED ===');
-            console.log('businessData:', businessData);
-            console.log('businessData length:', businessData ? businessData.length : 0);
-            
-            if (!businessData || businessData.length === 0) {
-                console.log('RETURNING: No business data');
-                return;
-            }
-            
-            console.log('Proceeding with dashboard update...');
+            if (!businessData || businessData.length === 0) return;
             
             const margin = parseFloat(document.getElementById('businessMargin').value);
             const currentMonth = businessData[businessData.length - 1];
             
-            console.log('Current month data:', currentMonth);
-            console.log('Month string:', currentMonth.month);
-            console.log('Setting businessPageSubtitle...');
-            
-            // SIMPLE TEST - if this doesn't show up, something is very wrong
-            document.getElementById('businessPageSubtitle').textContent = "TEST - IF YOU SEE THIS, JAVASCRIPT IS WORKING!";
-            document.getElementById('businessPageSubtitle').style.color = "red";
-            document.getElementById('businessPageSubtitle').style.fontSize = "24px";
-            
             document.getElementById('businessDashboardContent').classList.add('active');
             document.getElementById('businessPageSubtitle').textContent = `Latest: ${currentMonth.month} • ${(margin * 100)}% profit margin`;
             document.getElementById('currentMonthTitle').textContent = `Current Month Performance (${currentMonth.month})`;
-            
-            console.log('Calculating metrics...');
             
             const totalAdSpend = currentMonth.googleSpend + currentMonth.metaSpend;
             const totalAdRevenue = currentMonth.googleRevenue + currentMonth.metaRevenue;
@@ -4132,8 +4116,6 @@
         // Google Sheets URLs
         // Initialize dashboard with hardcoded data
         function initializeDashboard() {
-            console.log('Initializing dashboard with hardcoded data...');
-            
             // Hardcoded data is already in the correct format - no parsing needed!
             businessData = HARDCODED_BUSINESS_DATA.map(d => ({
                 month: d.month,
@@ -4150,8 +4132,7 @@
                 traffic: 5000 // Default traffic value
             }));
             
-            console.log('Loaded', businessData.length, 'months of business data');
-            console.log('Sample month:', businessData[0]);
+            console.log('✅ Dashboard initialized with', businessData.length, 'months and', HARDCODED_CAMPAIGNS.length, 'campaigns');
             
             // Process campaign data
             const metaCampaigns = HARDCODED_CAMPAIGNS.filter(c => c.platform === "Meta");
@@ -4167,8 +4148,6 @@
                 campaigns: googleCampaigns
             };
             
-            console.log('Loaded', metaCampaigns.length, 'Meta campaigns and', googleCampaigns.length, 'Google campaigns');
-            
             // Hide upload sections and show dashboards
             document.getElementById('businessUploadSection').style.display = 'none';
             document.getElementById('campaignUploadSection').style.display = 'none';
@@ -4178,8 +4157,6 @@
             updateCampaignDashboard();
             updateRevenueDashboard();
             updateTrendsDashboard();
-            
-            console.log('Dashboard initialization complete!');
         }
 
         // Keep old functions for backwards compatibility but they'll call initializer
@@ -4193,10 +4170,7 @@
         
         // Run initialization when page loads
         window.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM fully loaded, initializing dashboard in 100ms...');
-            setTimeout(() => {
-                initializeDashboard();
-            }, 100);
+            initializeDashboard();
         });
         
         // ==========================================
