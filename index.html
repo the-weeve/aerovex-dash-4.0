@@ -4134,9 +4134,24 @@
         function initializeDashboard() {
             console.log('Initializing dashboard with hardcoded data...');
             
-            // Process business data
-            businessData = parseBusinessData(HARDCODED_BUSINESS_DATA);
+            // Hardcoded data is already in the correct format - no parsing needed!
+            businessData = HARDCODED_BUSINESS_DATA.map(d => ({
+                month: d.month,
+                days: 30,
+                googleSpend: d.googleSpend,
+                googleRevenue: d.googleRevenue,
+                metaSpend: d.metaSpend,
+                metaRevenue: d.metaRevenue,
+                websiteSales: d.websiteSales,
+                lucasSales: d.lucasSales,
+                affiliateSales: d.affiliateSales,
+                recoveredCartRevenue: d.recoveredCartRevenue,
+                totalSales: d.websiteSales + d.lucasSales + d.affiliateSales + d.recoveredCartRevenue,
+                traffic: 5000 // Default traffic value
+            }));
+            
             console.log('Loaded', businessData.length, 'months of business data');
+            console.log('Sample month:', businessData[0]);
             
             // Process campaign data
             const metaCampaigns = HARDCODED_CAMPAIGNS.filter(c => c.platform === "Meta");
