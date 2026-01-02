@@ -1907,7 +1907,7 @@
         
         // HARDCODED DATA - Edit these arrays to update your dashboard
         const HARDCODED_BUSINESS_DATA = [
-            {month: "Jan 2025", websiteSales: 100, lucasSales: 12000, affiliateSales: 8000, recoveredCartRevenue: 3500, metaSpend: 3200, metaRevenue: 28000, googleSpend: 4500, googleRevenue: 22000},
+            {month: "Jan 2025", websiteSales: 45000, lucasSales: 12000, affiliateSales: 8000, recoveredCartRevenue: 3500, metaSpend: 3200, metaRevenue: 28000, googleSpend: 4500, googleRevenue: 22000},
             {month: "Feb 2025", websiteSales: 48000, lucasSales: 13000, affiliateSales: 8500, recoveredCartRevenue: 3700, metaSpend: 3400, metaRevenue: 30000, googleSpend: 4700, googleRevenue: 23000},
             {month: "Mar 2025", websiteSales: 52000, lucasSales: 14000, affiliateSales: 9000, recoveredCartRevenue: 4000, metaSpend: 3600, metaRevenue: 32000, googleSpend: 5000, googleRevenue: 25000},
             {month: "Apr 2025", websiteSales: 50000, lucasSales: 13500, affiliateSales: 8800, recoveredCartRevenue: 3900, metaSpend: 3500, metaRevenue: 31000, googleSpend: 4900, googleRevenue: 24000},
@@ -1943,6 +1943,107 @@
             {platform: "Google", name: "Google Campaign 3", spend: 1400, revenue: 4000, clicks: 470},
             {platform: "Google", name: "Google Campaign 4", spend: 420, revenue: 470, clicks: 140}
         ];
+        
+        // Google Sheets URL - Replace with your published sheet URL
+        // Instructions: File → Share → Publish to web → Select your sheet tab → CSV format → Copy URL here
+        const GOOGLE_SHEETS_URL = 'PASTE_YOUR_GOOGLE_SHEETS_URL_HERE';
+        
+        // Fetch with timeout helper
+        function fetchWithTimeout(url, timeout = 3000) {
+            return Promise.race([
+                fetch(url),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout')), timeout)
+                )
+            ]);
+        }
+        
+        // Load data from Google Sheets
+        async function loadFromGoogleSheets() {
+            if (!GOOGLE_SHEETS_URL || GOOGLE_SHEETS_URL === 'PASTE_YOUR_GOOGLE_SHEETS_URL_HERE') {
+                console.log('ℹ️ No Google Sheets URL configured - using hardcoded data');
+                return null;
+            }
+            
+            try {
+                console.log('🔄 Attempting to load from Google Sheets...');
+                const response = await fetchWithTimeout(GOOGLE_SHEETS_URL, 3000);
+                
+                if (!response.ok) {
+                    console.log('⚠️ Google Sheets returned error:', response.status);
+                    return null;
+                }
+                
+                const csvText = await response.text();
+                console.log('✅ Google Sheets data received');
+                
+                // Split CSV into business and campaign sections
+                const lines = csvText.split('\n');
+                let businessSection = [];
+                let campaignSection = [];
+                let currentSection = null;
+                
+                for (let line of lines) {
+                    const trimmed = line.trim();
+                    if (trimmed.startsWith('BUSINESS DATA')) {
+                        currentSection = 'business';
+                        continue;
+                    } else if (trimmed.startsWith('AD CAMPAIGN DATA')) {
+                        currentSection = 'campaign';
+                        continue;
+                    } else if (trimmed === '' || trimmed.replace(/,/g, '').trim() === '') {
+                        continue;
+                    }
+                    
+                    if (currentSection === 'business') {
+                        businessSection.push(line);
+                    } else if (currentSection === 'campaign') {
+                        campaignSection.push(line);
+                    }
+                }
+                
+                // Parse with Papa Parse
+                return new Promise((resolve) => {
+                    let parsedBusiness = null;
+                    let parsedCampaigns = null;
+                    let completedParsing = 0;
+                    
+                    if (businessSection.length > 0) {
+                        Papa.parse(businessSection.join('\n'), {
+                            header: true,
+                            complete: function(results) {
+                                parsedBusiness = results.data;
+                                completedParsing++;
+                                if (completedParsing === 2) {
+                                    resolve({ business: parsedBusiness, campaigns: parsedCampaigns });
+                                }
+                            }
+                        });
+                    } else {
+                        completedParsing++;
+                    }
+                    
+                    if (campaignSection.length > 0) {
+                        Papa.parse(campaignSection.join('\n'), {
+                            header: true,
+                            complete: function(results) {
+                                parsedCampaigns = results.data;
+                                completedParsing++;
+                                if (completedParsing === 2) {
+                                    resolve({ business: parsedBusiness, campaigns: parsedCampaigns });
+                                }
+                            }
+                        });
+                    } else {
+                        completedParsing++;
+                    }
+                });
+                
+            } catch (error) {
+                console.log('⚠️ Google Sheets loading failed:', error.message);
+                return null;
+            }
+        }
         
         // Tab switching
         function switchTab(tabName) {
@@ -4116,39 +4217,85 @@
         }
         
         // Google Sheets URLs
-        // Initialize dashboard with hardcoded data
-        function initializeDashboard() {
-            // Hardcoded data is already in the correct format - no parsing needed!
-            businessData = HARDCODED_BUSINESS_DATA.map(d => ({
-                month: d.month,
-                days: 30,
-                googleSpend: d.googleSpend,
-                googleRevenue: d.googleRevenue,
-                metaSpend: d.metaSpend,
-                metaRevenue: d.metaRevenue,
-                websiteSales: d.websiteSales,
-                lucasSales: d.lucasSales,
-                affiliateSales: d.affiliateSales,
-                recoveredCartRevenue: d.recoveredCartRevenue,
-                totalSales: d.websiteSales + d.lucasSales + d.affiliateSales + d.recoveredCartRevenue,
-                traffic: 5000 // Default traffic value
-            }));
+        // Initialize dashboard - tries Google Sheets first, falls back to hardcoded data
+        async function initializeDashboard() {
+            // Try loading from Google Sheets
+            const sheetsData = await loadFromGoogleSheets();
             
-            console.log('✅ Dashboard initialized with', businessData.length, 'months and', HARDCODED_CAMPAIGNS.length, 'campaigns');
-            
-            // Process campaign data
-            const metaCampaigns = HARDCODED_CAMPAIGNS.filter(c => c.platform === "Meta");
-            const googleCampaigns = HARDCODED_CAMPAIGNS.filter(c => c.platform === "Google");
-            
-            metaData = {
-                campaigns: metaCampaigns,
-                startDate: "1/1/2025",
-                endDate: "12/31/2025"
-            };
-            
-            googleData = {
-                campaigns: googleCampaigns
-            };
+            if (sheetsData && sheetsData.business && sheetsData.campaigns) {
+                // Successfully loaded from Google Sheets
+                console.log('📊 Using Google Sheets data');
+                
+                // Parse business data from sheets
+                businessData = parseBusinessData(sheetsData.business);
+                
+                // Parse campaign data from sheets
+                const metaCampaigns = [];
+                const googleCampaigns = [];
+                
+                sheetsData.campaigns.forEach(row => {
+                    if (row['Platform'] && row['Campaign Name']) {
+                        const campaign = {
+                            name: row['Campaign Name'],
+                            spend: parseFloat(row['Cost']) || 0,
+                            revenue: parseFloat(row['Revenue']) || 0,
+                            clicks: parseFloat(row['Clicks']) || 0
+                        };
+                        
+                        if (row['Platform'].toLowerCase().includes('meta')) {
+                            metaCampaigns.push(campaign);
+                        } else if (row['Platform'].toLowerCase().includes('google')) {
+                            googleCampaigns.push(campaign);
+                        }
+                    }
+                });
+                
+                metaData = {
+                    campaigns: metaCampaigns,
+                    startDate: "1/1/2025",
+                    endDate: "12/31/2025"
+                };
+                
+                googleData = {
+                    campaigns: googleCampaigns
+                };
+                
+                console.log('✅ Loaded', businessData.length, 'months and', (metaCampaigns.length + googleCampaigns.length), 'campaigns from Google Sheets');
+                
+            } else {
+                // Fallback to hardcoded data
+                console.log('💾 Using hardcoded fallback data');
+                
+                businessData = HARDCODED_BUSINESS_DATA.map(d => ({
+                    month: d.month,
+                    days: 30,
+                    googleSpend: d.googleSpend,
+                    googleRevenue: d.googleRevenue,
+                    metaSpend: d.metaSpend,
+                    metaRevenue: d.metaRevenue,
+                    websiteSales: d.websiteSales,
+                    lucasSales: d.lucasSales,
+                    affiliateSales: d.affiliateSales,
+                    recoveredCartRevenue: d.recoveredCartRevenue,
+                    totalSales: d.websiteSales + d.lucasSales + d.affiliateSales + d.recoveredCartRevenue,
+                    traffic: 5000
+                }));
+                
+                const metaCampaigns = HARDCODED_CAMPAIGNS.filter(c => c.platform === "Meta");
+                const googleCampaigns = HARDCODED_CAMPAIGNS.filter(c => c.platform === "Google");
+                
+                metaData = {
+                    campaigns: metaCampaigns,
+                    startDate: "1/1/2025",
+                    endDate: "12/31/2025"
+                };
+                
+                googleData = {
+                    campaigns: googleCampaigns
+                };
+                
+                console.log('✅ Loaded', businessData.length, 'months and', HARDCODED_CAMPAIGNS.length, 'campaigns from hardcoded data');
+            }
             
             // Hide upload sections and show dashboards
             document.getElementById('businessUploadSection').style.display = 'none';
